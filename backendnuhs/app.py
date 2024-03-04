@@ -4,7 +4,8 @@ from api_functions import *
 from typing import List, Dict
 import requests
 from datetime import datetime, timedelta
-
+import os 
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -34,6 +35,13 @@ class Message(BaseModel):
     text: str
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/get_user_info/{user_id}")
 def get_user_info(user_id: str):
