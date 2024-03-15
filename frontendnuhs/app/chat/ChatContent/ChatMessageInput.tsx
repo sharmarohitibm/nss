@@ -9,10 +9,14 @@ const ChatMessageInput = ({
   currentConversation,
   setAllConversations,
   allConversations,
+  pollApiId,
+  pollForMessages,
 }: {
   currentConversation: string;
   setAllConversations: any;
   allConversations: conversationType;
+  pollApiId: any;
+  pollForMessages;
 }) => {
   const [messageInput, setMessageInput] = useState<any>("");
 
@@ -24,17 +28,8 @@ const ChatMessageInput = ({
         message_thread_id: "",
       });
       const res = response.data;
-      if (res.message === "Message sent successfully") {
-        const curr = allConversations;
-        curr[currentConversation].messages.unshift({
-          text: messageInput,
-          timestamp: Date.now() / 1000,
-          isItMyself: true,
-        });
-        curr[currentConversation].lastSent = 0;
-
-        setAllConversations({ ...curr });
-      }
+      clearTimeout(pollApiId.current);
+      pollForMessages();
     } catch (err) {
       console.log("error in sending message in chat page", err);
     }

@@ -8,10 +8,14 @@ const ChatContent = ({
   allConversations,
   currentConversation,
   setAllConversations,
+  pollApiId,
+  pollForMessages,
 }: {
   allConversations: conversationType;
   currentConversation: string;
   setAllConversations: any;
+  pollApiId: any;
+  pollForMessages: any;
 }) => {
   return (
     <div className="flex h-full grow flex-col overflow-hidden bg-[#F0F0F0] pt-8">
@@ -42,6 +46,8 @@ const ChatContent = ({
       />
 
       <ChatMessageInput
+        pollForMessages={pollForMessages}
+        pollApiId={pollApiId}
         allConversations={allConversations}
         currentConversation={currentConversation}
         setAllConversations={setAllConversations}

@@ -20,7 +20,7 @@ const ChatConversation = ({
       return `${roundedNearestMinutes} min${roundedNearestMinutes === 1 ? "" : "s"}`;
     }
     if (time < 36000) {
-      const nearestHour = Math.floor(time);
+      const nearestHour = Math.floor(time / 60);
       return `${nearestHour} hour${nearestHour === 1 ? "" : "s"}`;
     }
   };

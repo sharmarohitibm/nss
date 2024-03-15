@@ -3,7 +3,7 @@ import ChatNavigation from "./ChatNavigation/ChatNavigation";
 import ChatSubNavigation from "./ChatSubNavigation/ChatSubNavigation";
 import ChatRightDrawer from "./ChatRightDrawer/ChatRightDrawer";
 import ChatContent from "./ChatContent/ChatContent";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { axiosInstance } from "@/shared/api";
 import mockAllMessages from "./ChatContent/mockAllMessage.json";
 
@@ -27,6 +27,8 @@ export default function ChatPage() {
     {},
   );
   const [currentConversation, setCurrentConversation] = useState<any>(null);
+
+  const pollAPIId = useRef<any>(null);
 
   const getAllMessages = async () => {
     try {
@@ -101,45 +103,84 @@ export default function ChatPage() {
 
   const pollForMessages = async () => {
     try {
-      const response = await axiosInstance.get("/get_updates");
+      const response = await axiosInstance.get("/new_merge_messages");
       const res = response.data;
       if (res && res.length > 0) {
         const newConversations = allConversations;
         res.forEach((incomingMessage: any) => {
-          if (!newConversations[incomingMessage.user_id]) {
-            newConversations[incomingMessage.user_id] = {
-              user_id: incomingMessage.user_id,
-              messages: [],
-              name: incomingMessage.first_name,
-              lastSent: Math.floor(
-                (Date.now() / 1000 - incomingMessage.message_date) / 60,
-              ),
-            };
-          }
+          if (incomingMessage.direction === "INCOMING") {
+            if (!newConversations[incomingMessage.user_id]) {
+              newConversations[incomingMessage.user_id] = {
+                user_id: incomingMessage.user_id,
+                messages: [],
+                name: incomingMessage.first_name,
+                lastSent: Math.floor(
+                  (Date.now() / 1000 - incomingMessage.timestamp) / 60,
+                ),
+              };
+            }
+            if (!newConversations[incomingMessage.user_id].name)
+              newConversations[incomingMessage.user_id].name =
+                incomingMessage.first_name;
+            if (
+              newConversations[incomingMessage.user_id].lastSent >
+              Math.floor((Date.now() / 1000 - incomingMessage.timestamp) / 60)
+            ) {
+              newConversations[incomingMessage.user_id].lastSent = Math.floor(
+                (Date.now() / 1000 - incomingMessage.timestamp) / 60,
+              );
+            }
 
-          newConversations[incomingMessage.user_id].messages.unshift({
-            text: incomingMessage.text,
-            timestamp: incomingMessage.message_date,
-            isItMyself: false,
-          });
+            newConversations[incomingMessage.user_id].messages.unshift({
+              text: incomingMessage.text,
+              timestamp: incomingMessage.timestamp,
+              isItMyself: incomingMessage.is_bot,
+            });
+          } else {
+            if (!newConversations[incomingMessage.chat_id]) {
+              newConversations[incomingMessage.chat_id] = {
+                user_id: incomingMessage.chat_id,
+                messages: [],
+                name: null,
+                lastSent: Math.floor(
+                  (Date.now() / 1000 - incomingMessage.timestamp) / 60,
+                ),
+              };
+            }
+            if (
+              newConversations[incomingMessage.chat_id].lastSent >
+              Math.floor((Date.now() / 1000 - incomingMessage.timestamp) / 60)
+            ) {
+              newConversations[incomingMessage.chat_id].lastSent = Math.floor(
+                (Date.now() / 1000 - incomingMessage.timestamp) / 60,
+              );
+            }
+            newConversations[incomingMessage.chat_id].messages.unshift({
+              text: incomingMessage.text,
+              timestamp: incomingMessage.timestamp,
+              isItMyself: incomingMessage.is_bot,
+            });
+          }
         });
 
         setAllConversations({ ...newConversations });
       }
-      setTimeout(() => {
+      if (pollAPIId.current) clearTimeout(pollAPIId.current);
+      const newId = setTimeout(() => {
         pollForMessages();
-      }, 10000);
+      }, 5000);
+
+      pollAPIId.current = newId;
       return;
     } catch (err) {
       console.log("error in chat page", err);
       setTimeout(() => {
         pollForMessages();
-      }, 10000);
+      }, 5000);
     }
   };
 
   useEffect(() => {
-    console.log("twice");
     getAllMessages();
   }, []);
 
@@ -153,6 +194,8 @@ export default function ChatPage() {
         setCurrentConversation={setCurrentConversation}
       />
       <ChatContent
+        pollForMessages={pollForMessages}
+        pollApiId={pollAPIId.current}
         allConversations={allConversations}
         currentConversation={currentConversation}
         setAllConversations={setAllConversations}
